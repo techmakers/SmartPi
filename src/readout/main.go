@@ -247,7 +247,7 @@ func main() {
 		os.Exit(0)
 	}
 
-	log.SetLevel(config.DebugLevel)
+	log.SetLevel(config.LogLevel)
 
 	smartpi.CheckDatabase(config.DatabaseDir)
 
