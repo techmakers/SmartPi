@@ -124,7 +124,7 @@ func pollSmartPi(config *smartpi.Config, device *i2c.Device) {
 		updatePrometheusMetrics(&readouts)
 
 		// Every 5 seconds
-		if i%5 == 0 {
+		if i%50 == 0 {
 			if config.SharedFileEnabled {
 				writeSharedFile(config, &readouts, wattHourBalanced5s)
 			}
