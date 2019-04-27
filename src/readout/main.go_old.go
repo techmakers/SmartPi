@@ -88,13 +88,12 @@ func pollSmartPi(config *smartpi.Config, device *i2c.Device) {
 	accumulator := makeReadoutAccumulator()
 	i := 0
 
-	//tick := time.Tick(time.Second)
-	tick := time.Tick(time.Second/10)
+	tick := time.Tick(time.Second)
 
 	for {
 		readouts := makeReadout()
 		// Restart the accumulator loop every 60 seconds.
-		if i > 590 {
+		if i > 59 {
 			i = 0
 			accumulator = makeReadoutAccumulator()
 		}
@@ -103,21 +102,21 @@ func pollSmartPi(config *smartpi.Config, device *i2c.Device) {
 
 		// Update readouts and the accumlator.
 		smartpi.ReadPhase(device, config, smartpi.PhaseN, &readouts)
-		accumulator.Current[smartpi.PhaseN] += readouts.Current[smartpi.PhaseN] / 600.0
+		accumulator.Current[smartpi.PhaseN] += readouts.Current[smartpi.PhaseN] / 60.0
 		for _, p = range smartpi.MainPhases {
 			smartpi.ReadPhase(device, config, p, &readouts)
-			accumulator.Current[p] += readouts.Current[p] / 600.0
-			accumulator.Voltage[p] += readouts.Voltage[p] / 600.0
-			accumulator.ActiveWatts[p] += readouts.ActiveWatts[p] / 600.0
-			accumulator.CosPhi[p] += readouts.CosPhi[p] / 600.0
-			accumulator.Frequency[p] += readouts.Frequency[p] / 600.0
+			accumulator.Current[p] += readouts.Current[p] / 60.0
+			accumulator.Voltage[p] += readouts.Voltage[p] / 60.0
+			accumulator.ActiveWatts[p] += readouts.ActiveWatts[p] / 60.0
+			accumulator.CosPhi[p] += readouts.CosPhi[p] / 60.0
+			accumulator.Frequency[p] += readouts.Frequency[p] / 60.0
 
 			if readouts.ActiveWatts[p] >= 0 {
-				accumulator.WattHoursConsumed[p] += math.Abs(readouts.ActiveWatts[p]) / 36000.0
+				accumulator.WattHoursConsumed[p] += math.Abs(readouts.ActiveWatts[p]) / 3600.0
 			} else {
-				accumulator.WattHoursProduced[p] += math.Abs(readouts.ActiveWatts[p]) / 36000.0
+				accumulator.WattHoursProduced[p] += math.Abs(readouts.ActiveWatts[p]) / 3600.0
 			}
-			wattHourBalanced5s += readouts.ActiveWatts[p] / 36000.0
+			wattHourBalanced5s += readouts.ActiveWatts[p] / 3600.0
 		}
 
 		// Update metrics endpoint.
@@ -138,7 +137,7 @@ func pollSmartPi(config *smartpi.Config, device *i2c.Device) {
 		}
 
 		// Every 60 seconds.
-		if i == 599 {
+		if i == 59 {
 
 			// balanced value
 			var wattHourBalanced60s float64
