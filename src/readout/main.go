@@ -94,7 +94,7 @@ func pollSmartPi(config *smartpi.Config, device *i2c.Device) {
 	for {
 		readouts := makeReadout()
 		// Restart the accumulator loop every 60 seconds.
-		if i > 590 {
+		if i > 599 {
 			i = 0
 			accumulator = makeReadoutAccumulator()
 		}
