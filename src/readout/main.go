@@ -89,7 +89,10 @@ func pollSmartPi(config *smartpi.Config, device *i2c.Device) {
 	i := 0
 
 	//tick := time.Tick(time.Second)
-	tick := time.Tick(time.Second/10)
+	tick := time.Tick(time.Second / 10)
+
+	lastMinute := -1
+	lastSecond := -1
 
 	for {
 		readouts := makeReadout()
@@ -123,8 +126,14 @@ func pollSmartPi(config *smartpi.Config, device *i2c.Device) {
 		// Update metrics endpoint.
 		updatePrometheusMetrics(&readouts)
 
-		// Every 5 seconds
-		if i%50 == 0 {
+		_, actualMinute, actualSecond := startTime.Clock()
+
+		secondChanged := actualSecond != lastSecond
+		minuteChanged := actualMinute != lastMinute
+
+		// Every 1 second
+		if secondChanged {
+			lastSecond = actualSecond
 			if config.SharedFileEnabled {
 				writeSharedFile(config, &readouts, wattHourBalanced5s)
 			}
@@ -138,8 +147,8 @@ func pollSmartPi(config *smartpi.Config, device *i2c.Device) {
 		}
 
 		// Every 60 seconds.
-		if i == 599 {
-
+		if minuteChanged {
+			lastMinute = actualMinute
 			// balanced value
 			var wattHourBalanced60s float64
 			consumedWattHourBalanced60s = 0.0
