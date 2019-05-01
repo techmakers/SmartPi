@@ -86,7 +86,6 @@ func pollSmartPi(config *smartpi.Config, device *i2c.Device) {
 	}
 
 	accumulator := makeReadoutAccumulator()
-	i := 0
 
 	//tick := time.Tick(time.Second)
 	tick := time.Tick(time.Second / 10)
@@ -107,12 +106,6 @@ func pollSmartPi(config *smartpi.Config, device *i2c.Device) {
 
 		if minuteChanged {
 			lastMinute = actualMinute
-		}
-
-		// Restart the accumulator loop every 60 seconds.
-		if minuteChanged {
-			i = 0
-			accumulator = makeReadoutAccumulator()
 		}
 
 		// Every 1 second
@@ -190,6 +183,8 @@ func pollSmartPi(config *smartpi.Config, device *i2c.Device) {
 				}
 				updateCounterFile(config, producerCounterFile, produced)
 			}
+
+			accumulator = makeReadoutAccumulator()
 		}
 
 		delay := time.Since(startTime) - (1000 * time.Millisecond)
@@ -197,7 +192,6 @@ func pollSmartPi(config *smartpi.Config, device *i2c.Device) {
 			log.Errorf("Readout delayed: %s", delay)
 		}
 		<-tick
-		i++
 	}
 }
 
