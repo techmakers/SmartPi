@@ -70,13 +70,45 @@ func makeReadout() (r smartpi.ADE7878Readout) {
 	r.ReactivePower = make(smartpi.Readings)
 	r.PowerFactor = make(smartpi.Readings)
 	r.ActiveEnergy = make(smartpi.Readings)
+	r.VoltageMax = make(smartpi.Readings)
+	r.VoltageMin = make(smartpi.Readings)
+	r.CurrentMax = make(smartpi.Readings)
+	r.CurrentMin = make(smartpi.Readings)
+	r.ActiveWattsMax = make(smartpi.Readings)
+	r.ActiveWattsMin = make(smartpi.Readings)
+	r.Count = 0
 	return r
+}
+
+func makeReadoutAccumulatorSecond() (r smartpi.ADE7878Readout) {
+	var p smartpi.Phase
+	readout := makeReadout()
+	for _, p = range smartpi.MainPhases {
+		readout.VoltageMax[p] = math.Inf(-1)
+		readout.VoltageMin[p] = math.Inf(+1)
+		readout.CurrentMax[p] = math.Inf(-1)
+		readout.CurrentMin[p] = math.Inf(+1)
+		readout.ActiveWattsMax[p] = math.Inf(-1)
+		readout.ActiveWattsMin[p] = math.Inf(+1)
+	}
+	return readout
 }
 
 func pollSmartPi(config *smartpi.Config, device *i2c.Device) {
 	var mqttclient MQTT.Client
 	var consumed, produced, wattHourBalanced1s, consumedWattHourBalanced60s, producedWattHourBalanced60s float64
 	var p smartpi.Phase
+
+	var periodMilliSeconds int
+	var cyclesPerSecond float64
+	var cyclesPerMinute float64
+	var millisCount int
+	var f float64
+	var samplef int
+
+	f = 10.0 //hz
+
+	cyclesPerMinute = 60.0 * f
 
 	consumerCounterFile := filepath.Join(config.CounterDir, "consumecounter")
 	producerCounterFile := filepath.Join(config.CounterDir, "producecounter")
@@ -86,69 +118,118 @@ func pollSmartPi(config *smartpi.Config, device *i2c.Device) {
 	}
 
 	accumulator := makeReadoutAccumulator()
+	accumulatorSecond := makeReadoutAccumulatorSecond() // we use it as an accumulator
 
 	//tick := time.Tick(time.Second)
-	tick := time.Tick(time.Second / 10)
+
+	samplef = int(math.Round(f * 4))
+
+	tick := time.Tick(time.Second / time.Duration(samplef))
 
 	lastMinute := -1
 	lastSecond := -1
+	lastMillisecond := -1
+
+	periodMilliSeconds = int(math.Round(1000.0 / f))
 
 	for {
 		startTime := time.Now()
 
 		_, actualMinute, actualSecond := startTime.Clock()
+
+		actualNanoSecond := startTime.Nanosecond()
+		actualMilliSecond := int(math.Round(float64(actualNanoSecond) / 1000000.0))
+
+		if lastMillisecond != actualMilliSecond {
+			millisCount++
+			lastMillisecond = actualMilliSecond
+		}
+
+		if millisCount == periodMilliSeconds {
+			cyclesPerSecond++
+			millisCount = 0
+
+			readouts := makeReadout()
+
+			accumulatorSecond.Count++
+
+			smartpi.ReadPhase(device, config, smartpi.PhaseN, &readouts)
+			accumulator.Current[smartpi.PhaseN] += readouts.Current[smartpi.PhaseN] / cyclesPerMinute
+			for _, p = range smartpi.MainPhases {
+				smartpi.ReadPhase(device, config, p, &readouts)
+				accumulator.Current[p] += readouts.Current[p] / cyclesPerMinute
+				accumulator.Voltage[p] += readouts.Voltage[p] / cyclesPerMinute
+				accumulator.ActiveWatts[p] += readouts.ActiveWatts[p] / cyclesPerMinute
+				accumulator.CosPhi[p] += readouts.CosPhi[p] / cyclesPerMinute
+				accumulator.Frequency[p] += readouts.Frequency[p] / cyclesPerMinute
+
+				if readouts.ActiveWatts[p] >= 0 {
+					accumulator.WattHoursConsumed[p] += math.Abs(readouts.ActiveWatts[p]) / 60.0 * cyclesPerMinute
+				} else {
+					accumulator.WattHoursProduced[p] += math.Abs(readouts.ActiveWatts[p]) / 60.0 * cyclesPerMinute
+				}
+				wattHourBalanced1s += readouts.ActiveWatts[p] / 60.0 * cyclesPerMinute
+
+				accumulatorSecond.Current[p] += readouts.Current[p] / cyclesPerSecond
+				accumulatorSecond.Voltage[p] += readouts.Voltage[p] / cyclesPerSecond
+				accumulatorSecond.ActiveWatts[p] += readouts.ActiveWatts[p] / cyclesPerSecond
+				accumulatorSecond.CosPhi[p] += readouts.CosPhi[p] / cyclesPerSecond
+				accumulatorSecond.Frequency[p] += readouts.Frequency[p] / cyclesPerSecond
+				accumulatorSecond.ReactivePower[p] += readouts.ReactivePower[p] / cyclesPerSecond
+				accumulatorSecond.ApparentPower[p] += readouts.ApparentPower[p] / cyclesPerSecond
+				accumulatorSecond.PowerFactor[p] += readouts.PowerFactor[p] / cyclesPerSecond
+
+				accumulatorSecond.VoltageMax[p] = math.Max(accumulatorSecond.VoltageMax[p], readouts.Voltage[p])
+				accumulatorSecond.VoltageMin[p] = math.Min(accumulatorSecond.VoltageMin[p], readouts.Voltage[p])
+				accumulatorSecond.CurrentMax[p] = math.Max(accumulatorSecond.CurrentMax[p], readouts.Current[p])
+				accumulatorSecond.CurrentMin[p] = math.Min(accumulatorSecond.CurrentMin[p], readouts.Current[p])
+				accumulatorSecond.ActiveWattsMax[p] = math.Max(accumulatorSecond.ActiveWattsMax[p], readouts.ActiveWatts[p])
+				accumulatorSecond.ActiveWattsMin[p] = math.Min(accumulatorSecond.ActiveWattsMin[p], readouts.ActiveWatts[p])
+
+			}
+		}
+
 		secondChanged := actualSecond != lastSecond
 		minuteChanged := actualMinute != lastMinute
-
-		if secondChanged {
-			lastSecond = actualSecond
-		}
-
-		if minuteChanged {
-			lastMinute = actualMinute
-		}
 
 		// Every 1 second
 		if secondChanged {
 
-			// Update readouts and the accumlator.
-			readouts := makeReadout()
+			lastSecond = actualSecond
+			cyclesPerSecond = 0
+			/*
+				// Update metrics endpoint.
+				updatePrometheusMetrics(&readouts)
 
-			smartpi.ReadPhase(device, config, smartpi.PhaseN, &readouts)
-			accumulator.Current[smartpi.PhaseN] += readouts.Current[smartpi.PhaseN] / 60.0
-			for _, p = range smartpi.MainPhases {
-				smartpi.ReadPhase(device, config, p, &readouts)
-				accumulator.Current[p] += readouts.Current[p] / 60.0
-				accumulator.Voltage[p] += readouts.Voltage[p] / 60.0
-				accumulator.ActiveWatts[p] += readouts.ActiveWatts[p] / 60.0
-				accumulator.CosPhi[p] += readouts.CosPhi[p] / 60.0
-				accumulator.Frequency[p] += readouts.Frequency[p] / 60.0
-
-				if readouts.ActiveWatts[p] >= 0 {
-					accumulator.WattHoursConsumed[p] += math.Abs(readouts.ActiveWatts[p]) / 3600.0
-				} else {
-					accumulator.WattHoursProduced[p] += math.Abs(readouts.ActiveWatts[p]) / 3600.0
+				if config.SharedFileEnabled {
+					writeSharedFile(config, &readouts, wattHourBalanced1s)
 				}
-				wattHourBalanced1s += readouts.ActiveWatts[p] / 3600.0
-			}
 
-			// Update metrics endpoint.
-			updatePrometheusMetrics(&readouts)
+				// Publish readouts to MQTT.
+				if config.MQTTenabled {
+					publishMQTTReadouts(config, mqttclient, &readouts)
+				}
+			*/
+			updatePrometheusMetrics(&accumulatorSecond)
 
 			if config.SharedFileEnabled {
-				writeSharedFile(config, &readouts, wattHourBalanced1s)
+				writeSharedFile(config, &accumulatorSecond, wattHourBalanced1s)
 			}
 
 			// Publish readouts to MQTT.
 			if config.MQTTenabled {
-				publishMQTTReadouts(config, mqttclient, &readouts)
+				publishMQTTReadouts(config, mqttclient, &accumulatorSecond)
 			}
+
+			accumulatorSecond = makeReadoutAccumulatorSecond()
 
 			wattHourBalanced1s = 0
 		}
 
 		// Every 60 seconds.
 		if minuteChanged {
+
+			lastMinute = actualMinute
 
 			// balanced value
 			var wattHourBalanced60s float64
