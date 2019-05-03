@@ -155,19 +155,14 @@ func pollSmartPi(config *smartpi.Config, device *i2c.Device) {
 		}
 
 		if millisCount >= periodMilliSeconds {
-			log.Debugf("startTime:%v",startTime)
+
 			cyclesPerSecond++
 			cyclesPerMinute++
-			log.Debugf("Sampling, cyclesPerSecond:%v",cyclesPerSecond)
 			millisCount = 0
 
 			readouts := makeReadout()
 
 			accumulatorSecond.Count++
-
-
-			//smartpi.ReadPhase(device, config, smartpi.PhaseN, &readouts)
-			//accumulator.Current[smartpi.PhaseN] += readouts.Current[smartpi.PhaseN]
 
 			accumulator.Current[smartpi.PhaseN] = smartpi.ReadCurrent(device,config,smartpi.PhaseN) ;
 			accumulatorSecond.Current[smartpi.PhaseN] = accumulator.Current[smartpi.PhaseN]
@@ -211,6 +206,8 @@ func pollSmartPi(config *smartpi.Config, device *i2c.Device) {
 
 		// Every 1 second
 		if secondChanged {
+
+			log.Infof("Samples per second: %v, per minute: %v", cyclesPerSecond, cyclesPerMinute)
 
 			accumulator.Current[smartpi.PhaseN] = accumulator.Current[smartpi.PhaseN] / cyclesPerMinute
 
