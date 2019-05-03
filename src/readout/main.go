@@ -147,7 +147,7 @@ func pollSmartPi(config *smartpi.Config, device *i2c.Device) {
 		log.Debugf("actualMilliSecond:%v",actualMilliSecond)
 
 		if lastMillisecond != actualMilliSecond {
-			millisCount++
+			millisCount += actualMilliSecond - lastMillisecond
 			lastMillisecond = actualMilliSecond
 			log.Debugf("millisCount:%v",millisCount)
 		}
