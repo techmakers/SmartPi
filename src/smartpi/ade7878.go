@@ -518,7 +518,82 @@ func ReadAngle(d *i2c.Device, c *Config, phase Phase) (angle float64) {
 	return angle
 }
 
+var lastFrequencyA, lastFrequencyB, lastFrequencyC float64
+var waitingForFrequency bool
+var lastPhaseMMODESet Phase
+var lastMMODECommandSentAt time.Time
+var frequecyTimeOut time.Duration = 70 * time.Millisecond
+
+
 func ReadFrequency(d *i2c.Device, c *Config, phase Phase) (frequency float64) {
+
+
+	if (waitingForFrequency){
+		now := time.Now()
+		timePassed := now.Sub(lastMMODECommandSentAt)
+		// Make sure we capture 3 full cycles at ~50Hz, 4 cycles at ~60Hz.
+		if timePassed >= frequecyTimeOut {
+			waitingForFrequency = false
+			outcome := float64(DeviceFetchInt(d, 2, []byte{0xE6, 0x07}))
+			frequency = ade7878Clock / (outcome + 1)
+		}
+		switch lastPhaseMMODESet {
+			case PhaseA:
+				lastFrequencyA = frequency
+			case PhaseB:
+				lastFrequencyB = frequency
+			case PhaseC:
+				lastFrequencyC = frequency
+			default:
+				panic(fmt.Errorf("Invalid phase %q", phase))
+		}
+	} else {
+		command := make([]byte, 2)
+		switch phase {
+		case PhaseA:
+			command = []byte{0xE7, 0x00, 0x1C} // 0xE7001C MMODE-Register measure frequency at VA
+		case PhaseB:
+			command = []byte{0xE7, 0x00, 0x1D} // 0xE7001D MMODE-Register measure frequency at VB
+		case PhaseC:
+			command = []byte{0xE7, 0x00, 0x1E} // 0xE7001E MMODE-Register measure frequency at VC
+		default:
+			panic(fmt.Errorf("Invalid phase %q", phase))
+		}
+
+		err := d.Write(command) // MMODE-Register measure frequency
+		if err != nil {
+			panic(err)
+		}
+		lastPhaseMMODESet = phase
+		lastMMODECommandSentAt = time.Now()
+		waitingForFrequency = true
+	}
+
+	switch phase {
+		case PhaseA:
+			if (lastFrequencyA == 0) {
+				lastFrequencyA = ReadFrequencySlow(d,c,phase)
+			}
+			frequency = lastFrequencyA
+		case PhaseB:
+			if (lastFrequencyB == 0) {
+				lastFrequencyB = ReadFrequencySlow(d,c,phase)
+			}
+			frequency = lastFrequencyB
+		case PhaseC:
+			if (lastFrequencyC == 0) {
+				lastFrequencyC = ReadFrequencySlow(d,c,phase)
+			}
+			frequency = lastFrequencyC
+		default:
+			panic(fmt.Errorf("Invalid phase %q", phase))
+	}
+
+	return frequency
+}
+
+
+func ReadFrequencySlow(d *i2c.Device, c *Config, phase Phase) (frequency float64) {
 	command := make([]byte, 2)
 	switch phase {
 	case PhaseA:
@@ -543,6 +618,7 @@ func ReadFrequency(d *i2c.Device, c *Config, phase Phase) (frequency float64) {
 
 	return frequency
 }
+
 
 func ReadApparentPower(d *i2c.Device, c *Config, phase Phase) float64 {
 	command := make([]byte, 2)
