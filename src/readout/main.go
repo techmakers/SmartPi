@@ -157,6 +157,7 @@ func pollSmartPi(config *smartpi.Config, device *i2c.Device) {
 		if millisCount >= periodMilliSeconds {
 			log.Debugf("startTime:%v",startTime)
 			cyclesPerSecond++
+			cyclesPerMinute++
 			log.Debugf("Sampling, cyclesPerSecond:%v",cyclesPerSecond)
 			millisCount = 0
 
@@ -165,21 +166,21 @@ func pollSmartPi(config *smartpi.Config, device *i2c.Device) {
 			accumulatorSecond.Count++
 
 			smartpi.ReadPhase(device, config, smartpi.PhaseN, &readouts)
-			accumulator.Current[smartpi.PhaseN] += readouts.Current[smartpi.PhaseN] / cyclesPerMinute
+			accumulator.Current[smartpi.PhaseN] += readouts.Current[smartpi.PhaseN]
 			for _, p = range smartpi.MainPhases {
 				smartpi.ReadPhase(device, config, p, &readouts)
-				accumulator.Current[p] += readouts.Current[p] / cyclesPerMinute
-				accumulator.Voltage[p] += readouts.Voltage[p] / cyclesPerMinute
-				accumulator.ActiveWatts[p] += readouts.ActiveWatts[p] / cyclesPerMinute
-				accumulator.CosPhi[p] += readouts.CosPhi[p] / cyclesPerMinute
-				accumulator.Frequency[p] += readouts.Frequency[p] / cyclesPerMinute
+				accumulator.Current[p] += readouts.Current[p]
+				accumulator.Voltage[p] += readouts.Voltage[p]
+				accumulator.ActiveWatts[p] += readouts.ActiveWatts[p]
+				accumulator.CosPhi[p] += readouts.CosPhi[p]
+				accumulator.Frequency[p] += readouts.Frequency[p]
 
 				if readouts.ActiveWatts[p] >= 0 {
-					accumulator.WattHoursConsumed[p] += math.Abs(readouts.ActiveWatts[p]) / (60.0 * cyclesPerMinute)
+					accumulator.WattHoursConsumed[p] += math.Abs(readouts.ActiveWatts[p])
 				} else {
-					accumulator.WattHoursProduced[p] += math.Abs(readouts.ActiveWatts[p]) / (60.0 * cyclesPerMinute)
+					accumulator.WattHoursProduced[p] += math.Abs(readouts.ActiveWatts[p])
 				}
-				wattHourBalanced1s += readouts.ActiveWatts[p] / (60.0 * cyclesPerMinute)
+				wattHourBalanced1s += readouts.ActiveWatts[p]
 
 				accumulatorSecond.Current[p] 		+= readouts.Current[p]
 				accumulatorSecond.Voltage[p] 		+= readouts.Voltage[p]
@@ -206,15 +207,28 @@ func pollSmartPi(config *smartpi.Config, device *i2c.Device) {
 		// Every 1 second
 		if secondChanged {
 
+			accumulator.Current[smartpi.PhaseN] = accumulator.Current[smartpi.PhaseN] / cyclesPerMinute
+			wattHourBalanced1s 					= wattHourBalanced1s / (60.0 * cyclesPerMinute)
 
-			accumulatorSecond.Current[p] 		= accumulatorSecond.Current[p] 		/ cyclesPerSecond
-			accumulatorSecond.Voltage[p] 		= accumulatorSecond.Voltage[p] 		/ cyclesPerSecond
-			accumulatorSecond.ActiveWatts[p] 	= accumulatorSecond.ActiveWatts[p] 	/ cyclesPerSecond
-			accumulatorSecond.CosPhi[p] 		= accumulatorSecond.CosPhi[p] 		/ cyclesPerSecond
-			accumulatorSecond.Frequency[p] 		= accumulatorSecond.Frequency[p] 	/ cyclesPerSecond
-			accumulatorSecond.ReactivePower[p] 	= accumulatorSecond.ReactivePower[p]/ cyclesPerSecond
-			accumulatorSecond.ApparentPower[p] 	= accumulatorSecond.ApparentPower[p]/ cyclesPerSecond
-			accumulatorSecond.PowerFactor[p] 	= accumulatorSecond.PowerFactor[p] 	/ cyclesPerSecond
+			for _, p = range smartpi.MainPhases {
+
+				accumulator.Current[p] 				= accumulator.Current[p] / cyclesPerMinute
+				accumulator.Voltage[p] 				= accumulator.Voltage[p] / cyclesPerMinute
+				accumulator.ActiveWatts[p] 			= accumulator.ActiveWatts[p] / cyclesPerMinute
+				accumulator.CosPhi[p] 				= accumulator.CosPhi[p] / cyclesPerMinute
+				accumulator.Frequency[p] 			= accumulator.Frequency[p] / cyclesPerMinute
+				accumulator.WattHoursConsumed[p] 	= accumulator.WattHoursConsumed[p] / (60.0 * cyclesPerMinute)
+				accumulator.WattHoursProduced[p] 	= accumulator.WattHoursProduced[p] / (60.0 * cyclesPerMinute)
+				
+				accumulatorSecond.Current[p] 		= accumulatorSecond.Current[p] 		/ cyclesPerSecond
+				accumulatorSecond.Voltage[p] 		= accumulatorSecond.Voltage[p] 		/ cyclesPerSecond
+				accumulatorSecond.ActiveWatts[p] 	= accumulatorSecond.ActiveWatts[p] 	/ cyclesPerSecond
+				accumulatorSecond.CosPhi[p] 		= accumulatorSecond.CosPhi[p] 		/ cyclesPerSecond
+				accumulatorSecond.Frequency[p] 		= accumulatorSecond.Frequency[p] 	/ cyclesPerSecond
+				accumulatorSecond.ReactivePower[p] 	= accumulatorSecond.ReactivePower[p]/ cyclesPerSecond
+				accumulatorSecond.ApparentPower[p] 	= accumulatorSecond.ApparentPower[p]/ cyclesPerSecond
+				accumulatorSecond.PowerFactor[p] 	= accumulatorSecond.PowerFactor[p] 	/ cyclesPerSecond
+			}
 
 			lastSecond = actualSecond
 			cyclesPerSecond = 0
