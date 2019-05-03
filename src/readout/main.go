@@ -99,7 +99,7 @@ func pollSmartPi(config *smartpi.Config, device *i2c.Device) {
 	var consumed, produced, wattHourBalanced1s, consumedWattHourBalanced60s, producedWattHourBalanced60s float64
 	var p smartpi.Phase
 
-	var periodMilliSeconds int
+	var periodMilliSeconds int64
 	var cyclesPerSecond float64
 	var cyclesPerMinute float64
 	var lastMillisecond int64
