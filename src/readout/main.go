@@ -133,7 +133,7 @@ func pollSmartPi(config *smartpi.Config, device *i2c.Device) {
 	lastSecond := -1
 	lastMillisecond = -1
 
-	periodMilliSeconds = int(math.Round(1000.0 / f))
+	periodMilliSeconds = int64(math.Round(1000.0 / f))
 
 	log.Debugf("Polling periodMilliseconds: %v, samplef: %v, tickDuration: %v",periodMilliSeconds, samplef, tickDuration)
 
