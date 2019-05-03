@@ -124,13 +124,17 @@ func pollSmartPi(config *smartpi.Config, device *i2c.Device) {
 
 	samplef = int(math.Round(f * 4))
 
-	tick := time.Tick(time.Second / time.Duration(samplef))
+	tickDuration := time.Second / time.Duration(samplef) ;
+
+	tick := time.Tick(tickDuration)
 
 	lastMinute := -1
 	lastSecond := -1
 	lastMillisecond := -1
 
 	periodMilliSeconds = int(math.Round(1000.0 / f))
+
+	log.Debugf("Polling periodMilliseconds: %v, samplef: %v, tickDuration: %v",periodMilliSeconds, samplef, tickDuration)
 
 	for {
 		startTime := time.Now()
@@ -164,11 +168,11 @@ func pollSmartPi(config *smartpi.Config, device *i2c.Device) {
 				accumulator.Frequency[p] += readouts.Frequency[p] / cyclesPerMinute
 
 				if readouts.ActiveWatts[p] >= 0 {
-					accumulator.WattHoursConsumed[p] += math.Abs(readouts.ActiveWatts[p]) / 60.0 * cyclesPerMinute
+					accumulator.WattHoursConsumed[p] += math.Abs(readouts.ActiveWatts[p]) / (60.0 * cyclesPerMinute)
 				} else {
-					accumulator.WattHoursProduced[p] += math.Abs(readouts.ActiveWatts[p]) / 60.0 * cyclesPerMinute
+					accumulator.WattHoursProduced[p] += math.Abs(readouts.ActiveWatts[p]) / (60.0 * cyclesPerMinute)
 				}
-				wattHourBalanced1s += readouts.ActiveWatts[p] / 60.0 * cyclesPerMinute
+				wattHourBalanced1s += readouts.ActiveWatts[p] / (60.0 * cyclesPerMinute)
 
 				accumulatorSecond.Current[p] += readouts.Current[p] / cyclesPerSecond
 				accumulatorSecond.Voltage[p] += readouts.Voltage[p] / cyclesPerSecond
