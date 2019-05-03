@@ -123,7 +123,7 @@ func pollSmartPi(config *smartpi.Config, device *i2c.Device) {
 	var f float64
 	var samplef int
 
-	f = 200.0 //hz
+	f = config.ReadingsPerSecond //hz
 
 	cyclesPerMinute = 0
 

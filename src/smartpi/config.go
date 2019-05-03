@@ -62,6 +62,7 @@ type Config struct {
 	MeasureCurrent       map[Phase]bool
 	MeasureVoltage       map[Phase]bool
 	Voltage              map[Phase]float64
+	ReadingsPerSecond	 float64
 
 	// [ftp]
 	FTPupload bool
@@ -168,6 +169,7 @@ func (p *Config) ReadParameterFromFile() {
 	p.Voltage[PhaseA] = cfg.Section("device").Key("voltage_1").MustFloat64(230)
 	p.Voltage[PhaseB] = cfg.Section("device").Key("voltage_2").MustFloat64(230)
 	p.Voltage[PhaseC] = cfg.Section("device").Key("voltage_3").MustFloat64(230)
+	p.ReadingsPerSecond = cfg.Section("device").Key("readings_per_second").MustFloat64(5)
 
 	// [ftp]
 	p.FTPupload = cfg.Section("ftp").Key("ftp_upload").MustBool(false)
