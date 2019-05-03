@@ -38,6 +38,13 @@ type ReadoutAccumulator struct {
 	Frequency         Readings
 	WattHoursConsumed Readings
 	WattHoursProduced Readings
+	VoltageMax		  Readings
+	VoltageMin        Readings
+	CurrentMax		  Readings
+	CurrentMin        Readings
+	ActiveWattsMax	  Readings
+	ActiveWattsMin    Readings
+	Count			  float64
 }
 
 func Checkpanic(e error) {

@@ -103,7 +103,7 @@ type ADE7878Readout struct {
 	CurrentMin     Readings
 	ActiveWattsMax Readings
 	ActiveWattsMin Readings
-	Count          int
+	Count          float64
 }
 
 type CTFactors struct {

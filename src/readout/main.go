@@ -50,6 +50,7 @@ import (
 )
 
 func makeReadoutAccumulator() (r smartpi.ReadoutAccumulator) {
+	var p smartpi.Phase
 	r.Current = make(smartpi.Readings)
 	r.Voltage = make(smartpi.Readings)
 	r.ActiveWatts = make(smartpi.Readings)
@@ -57,6 +58,21 @@ func makeReadoutAccumulator() (r smartpi.ReadoutAccumulator) {
 	r.Frequency = make(smartpi.Readings)
 	r.WattHoursConsumed = make(smartpi.Readings)
 	r.WattHoursProduced = make(smartpi.Readings)
+	r.VoltageMax = make(smartpi.Readings)
+	r.VoltageMin = make(smartpi.Readings)
+	r.CurrentMax = make(smartpi.Readings)
+	r.CurrentMin = make(smartpi.Readings)
+	r.ActiveWattsMax = make(smartpi.Readings)
+	r.ActiveWattsMin = make(smartpi.Readings)
+	r.Count = 0
+	for _, p = range smartpi.MainPhases {
+		r.VoltageMax[p] = math.Inf(-1)
+		r.VoltageMin[p] = math.Inf(+1)
+		r.CurrentMax[p] = math.Inf(-1)
+		r.CurrentMin[p] = math.Inf(+1)
+		r.ActiveWattsMax[p] = math.Inf(-1)
+		r.ActiveWattsMin[p] = math.Inf(+1)
+	}
 	return r
 }
 
@@ -162,13 +178,13 @@ func pollSmartPi(config *smartpi.Config, device *i2c.Device) {
 
 			readouts := makeReadout()
 
-			accumulatorSecond.Count++
-
 			accumulator.Current[smartpi.PhaseN] = smartpi.ReadCurrent(device,config,smartpi.PhaseN) ;
 			accumulatorSecond.Current[smartpi.PhaseN] = accumulator.Current[smartpi.PhaseN]
 
 			for _, p = range smartpi.MainPhases {
+
 				smartpi.ReadPhase(device, config, p, &readouts)
+
 				accumulator.Current[p] += readouts.Current[p]
 				accumulator.Voltage[p] += readouts.Voltage[p]
 				accumulator.ActiveWatts[p] += readouts.ActiveWatts[p]
@@ -181,6 +197,13 @@ func pollSmartPi(config *smartpi.Config, device *i2c.Device) {
 					accumulator.WattHoursProduced[p] += math.Abs(readouts.ActiveWatts[p])
 				}
 				wattHourBalanced1s += readouts.ActiveWatts[p]
+
+				accumulator.VoltageMax[p] = math.Max(accumulator.VoltageMax[p], readouts.Voltage[p])
+				accumulator.VoltageMin[p] = math.Min(accumulator.VoltageMin[p], readouts.Voltage[p])
+				accumulator.CurrentMax[p] = math.Max(accumulator.CurrentMax[p], readouts.Current[p])
+				accumulator.CurrentMin[p] = math.Min(accumulator.CurrentMin[p], readouts.Current[p])
+				accumulator.ActiveWattsMax[p] = math.Max(accumulator.ActiveWattsMax[p], readouts.ActiveWatts[p])
+				accumulator.ActiveWattsMin[p] = math.Min(accumulator.ActiveWattsMin[p], readouts.ActiveWatts[p])
 
 				accumulatorSecond.Current[p] 		+= readouts.Current[p]
 				accumulatorSecond.Voltage[p] 		+= readouts.Voltage[p]
@@ -207,23 +230,12 @@ func pollSmartPi(config *smartpi.Config, device *i2c.Device) {
 		// Every 1 second
 		if secondChanged {
 
-			log.Infof("Samples per second: %v, per minute: %v", cyclesPerSecond, cyclesPerMinute)
-
-			accumulator.Current[smartpi.PhaseN] = accumulator.Current[smartpi.PhaseN] / cyclesPerMinute
+			log.Infof("Samples per second: %v", cyclesPerSecond)
 
 			accumulatorSecond.Current[smartpi.PhaseN] = accumulatorSecond.Current[smartpi.PhaseN] / cyclesPerSecond
-
-			wattHourBalanced1s 					= wattHourBalanced1s / (60.0 * cyclesPerMinute)
+			accumulatorSecond.Count = cyclesPerSecond
 
 			for _, p = range smartpi.MainPhases {
-
-				accumulator.Current[p] 				= accumulator.Current[p] / cyclesPerMinute
-				accumulator.Voltage[p] 				= accumulator.Voltage[p] / cyclesPerMinute
-				accumulator.ActiveWatts[p] 			= accumulator.ActiveWatts[p] / cyclesPerMinute
-				accumulator.CosPhi[p] 				= accumulator.CosPhi[p] / cyclesPerMinute
-				accumulator.Frequency[p] 			= accumulator.Frequency[p] / cyclesPerMinute
-				accumulator.WattHoursConsumed[p] 	= accumulator.WattHoursConsumed[p] / (60.0 * cyclesPerMinute)
-				accumulator.WattHoursProduced[p] 	= accumulator.WattHoursProduced[p] / (60.0 * cyclesPerMinute)
 				
 				accumulatorSecond.Current[p] 		= accumulatorSecond.Current[p] 		/ cyclesPerSecond
 				accumulatorSecond.Voltage[p] 		= accumulatorSecond.Voltage[p] 		/ cyclesPerSecond
@@ -237,19 +249,7 @@ func pollSmartPi(config *smartpi.Config, device *i2c.Device) {
 
 			lastSecond = actualSecond
 			cyclesPerSecond = 0
-			/*
-				// Update metrics endpoint.
-				updatePrometheusMetrics(&readouts)
 
-				if config.SharedFileEnabled {
-					writeSharedFile(config, &readouts, wattHourBalanced1s)
-				}
-
-				// Publish readouts to MQTT.
-				if config.MQTTenabled {
-					publishMQTTReadouts(config, mqttclient, &readouts)
-				}
-			*/
 			updatePrometheusMetrics(&accumulatorSecond)
 
 			if config.SharedFileEnabled {
@@ -268,6 +268,24 @@ func pollSmartPi(config *smartpi.Config, device *i2c.Device) {
 
 		// Every 60 seconds.
 		if minuteChanged {
+
+			log.Infof("Samples per minute: %v", cyclesPerMinute)
+
+			accumulator.Count = cyclesPerMinute
+
+			accumulator.Current[smartpi.PhaseN] = accumulator.Current[smartpi.PhaseN] / cyclesPerMinute
+
+			wattHourBalanced1s 					= wattHourBalanced1s / (60.0 * cyclesPerMinute)
+
+			for _, p = range smartpi.MainPhases {
+				accumulator.Current[p] 				= accumulator.Current[p] / cyclesPerMinute
+				accumulator.Voltage[p] 				= accumulator.Voltage[p] / cyclesPerMinute
+				accumulator.ActiveWatts[p] 			= accumulator.ActiveWatts[p] / cyclesPerMinute
+				accumulator.CosPhi[p] 				= accumulator.CosPhi[p] / cyclesPerMinute
+				accumulator.Frequency[p] 			= accumulator.Frequency[p] / cyclesPerMinute
+				accumulator.WattHoursConsumed[p] 	= accumulator.WattHoursConsumed[p] / (60.0 * cyclesPerMinute)
+				accumulator.WattHoursProduced[p] 	= accumulator.WattHoursProduced[p] / (60.0 * cyclesPerMinute)
+			}
 
 			lastMinute = actualMinute
 
@@ -306,6 +324,7 @@ func pollSmartPi(config *smartpi.Config, device *i2c.Device) {
 			}
 
 			accumulator = makeReadoutAccumulator()
+			cyclesPerMinute = 0 
 		}
 
 		delay := time.Since(startTime) - (1000 * time.Millisecond)
