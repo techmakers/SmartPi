@@ -103,7 +103,7 @@ func pollSmartPi(config *smartpi.Config, device *i2c.Device) {
 	var cyclesPerSecond float64
 	var cyclesPerMinute float64
 	var lastMillisecond int64
-	var millisCount int
+	var millisCount int64
 	var f float64
 	var samplef int
 
