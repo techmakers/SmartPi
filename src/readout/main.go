@@ -109,7 +109,7 @@ func pollSmartPi(config *smartpi.Config, device *i2c.Device) {
 
 	f = 10.0 //hz
 
-	cyclesPerMinute = 60.0 * f
+	cyclesPerMinute = 0
 
 	consumerCounterFile := filepath.Join(config.CounterDir, "consumecounter")
 	producerCounterFile := filepath.Join(config.CounterDir, "producecounter")
@@ -165,8 +165,13 @@ func pollSmartPi(config *smartpi.Config, device *i2c.Device) {
 
 			accumulatorSecond.Count++
 
-			smartpi.ReadPhase(device, config, smartpi.PhaseN, &readouts)
-			accumulator.Current[smartpi.PhaseN] += readouts.Current[smartpi.PhaseN]
+
+			//smartpi.ReadPhase(device, config, smartpi.PhaseN, &readouts)
+			//accumulator.Current[smartpi.PhaseN] += readouts.Current[smartpi.PhaseN]
+
+			accumulator.Current[smartpi.PhaseN] = smartpi.ReadCurrent(device,config,smartpi.PhaseN) ;
+			accumulatorSecond.Current[smartpi.PhaseN] = accumulator.Current[smartpi.PhaseN]
+
 			for _, p = range smartpi.MainPhases {
 				smartpi.ReadPhase(device, config, p, &readouts)
 				accumulator.Current[p] += readouts.Current[p]
@@ -208,6 +213,9 @@ func pollSmartPi(config *smartpi.Config, device *i2c.Device) {
 		if secondChanged {
 
 			accumulator.Current[smartpi.PhaseN] = accumulator.Current[smartpi.PhaseN] / cyclesPerMinute
+
+			accumulatorSecond.Current[smartpi.PhaseN] = accumulatorSecond.Current[smartpi.PhaseN] / cyclesPerSecond
+
 			wattHourBalanced1s 					= wattHourBalanced1s / (60.0 * cyclesPerMinute)
 
 			for _, p = range smartpi.MainPhases {
