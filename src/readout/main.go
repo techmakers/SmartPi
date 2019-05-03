@@ -122,7 +122,7 @@ func pollSmartPi(config *smartpi.Config, device *i2c.Device) {
 
 	//tick := time.Tick(time.Second)
 
-	samplef = int(math.Round(f * 4))
+	samplef = int(math.Round(f * 100))
 
 	tickDuration := time.Second / time.Duration(samplef) ;
 
