@@ -141,7 +141,8 @@ func pollSmartPi(config *smartpi.Config, device *i2c.Device) {
 
 		_, actualMinute, actualSecond := startTime.Clock()
 
-		actualNanoSecond := startTime.Nanosecond()
+		//actualNanoSecond := startTime.Nanosecond()
+		actualNanoSecond := startTime.UnixNano()
 		actualMilliSecond := int(math.Round(float64(actualNanoSecond) / 1000000.0))
 
 		log.Debugf("actualMilliSecond:%v",actualMilliSecond)
@@ -152,7 +153,7 @@ func pollSmartPi(config *smartpi.Config, device *i2c.Device) {
 			log.Debugf("millisCount:%v",millisCount)
 		}
 
-		if millisCount == periodMilliSeconds {
+		if millisCount >= periodMilliSeconds {
 			log.Debugf("startTime:%v",startTime)
 			log.Debugf("Sampling, cyclesPerSecond:%v",cyclesPerSecond)
 			cyclesPerSecond++
