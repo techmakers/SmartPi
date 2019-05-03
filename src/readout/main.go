@@ -156,8 +156,8 @@ func pollSmartPi(config *smartpi.Config, device *i2c.Device) {
 
 		if millisCount >= periodMilliSeconds {
 			log.Debugf("startTime:%v",startTime)
-			log.Debugf("Sampling, cyclesPerSecond:%v",cyclesPerSecond)
 			cyclesPerSecond++
+			log.Debugf("Sampling, cyclesPerSecond:%v",cyclesPerSecond)
 			millisCount = 0
 
 			readouts := makeReadout()
