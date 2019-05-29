@@ -236,6 +236,23 @@
                                 </div>
                             </div>
 
+                            <div layout="row" layout-wrap>
+                                <div flex>
+                                    <md-card class="md-default-theme">
+                                        <md-toolbar layout="row">
+                                            <div class="md-toolbar-tools">
+                                                <h2>
+                                                    <span>Production</span>
+                                                </h2>
+                                                <span flex></span>
+                                                <div class="huge">Week</div>
+                                            </div>
+                                        </md-toolbar>
+                                        <nvd3 options='weekproductionoptions' data='weekproductiondata'></nvd3>
+                                    </md-card>
+                                </div>
+                            </div>
+
                         </div>
 
                         <div ng-switch-when="chart">

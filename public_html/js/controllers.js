@@ -10,6 +10,7 @@ smartpi.controller('MainCtrl', function($scope, $Momentary, $Linechart, $GetData
     $scope.momentary = [];
     $scope.dayconsumption = [];
     $scope.weekconsumptiondata = [];
+    $scope.weekproductiondata = [];
 
 
     $scope.linechartdate = moment();
@@ -41,6 +42,7 @@ smartpi.controller('MainCtrl', function($scope, $Momentary, $Linechart, $GetData
     getConsumptionToday();
     getProductionToday();
     getConsumptionWeek();
+    getProductionWeek();
     timer = $interval(function() {
         getActualValues();
     }, 5000);
@@ -152,6 +154,40 @@ smartpi.controller('MainCtrl', function($scope, $Momentary, $Linechart, $GetData
             function(error) {});
     }
 
+    function prepareResult(data){
+        var dateString;
+        var dataarray = new Array();
+
+        console.log(data);
+
+
+        angular.forEach(data, function(series) {
+            angular.forEach(series.values, function(value) {
+                //     $scope.dayconsumption_total = $scope.dayconsumption_total + value.value;
+                if (typeof dataarray[moment(value.time).format("YYYYMMDD")] === 'undefined') {
+                    dataarray[moment(value.time).format("YYYYMMDD")] = value.value;
+                    // var timezone = jstz.determine();
+                    console.log("if: " + moment(value.time).format("YYYYMMDD") + " value: " + value.value + " dataarray: " + dataarray[moment(value.time).format("YYYYMMDD")]);
+                } else {
+                    dataarray[moment(value.time).format("YYYYMMDD")] = dataarray[moment(value.time).format("YYYYMMDD")] + value.value;
+                    console.log("else: " + moment(value.time).format("YYYYMMDD") + " value: " + value.value + " dataarray: " + dataarray[moment(value.time).format("YYYYMMDD")]);
+                }
+            });
+        });
+
+        console.log(dataarray);
+
+        var obj = [];
+        for (key in dataarray) {
+            obj.push({
+                label: key,
+                value: dataarray[key]
+            });
+        }
+
+        console.log(obj);
+        return obj ;
+    }
 
     function getConsumptionWeek() {
 
@@ -159,47 +195,40 @@ smartpi.controller('MainCtrl', function($scope, $Momentary, $Linechart, $GetData
         $GetDayData.query({
                 category: 'energy_pos',
                 phase: '123',
-                startdate: moment().subtract(7, 'days').startOf('day').format(),
+                startdate: moment().subtract(28, 'days').startOf('day').format(),
                 enddate: moment().format()
             },
 
             function(data) {
 
-                var dateString;
-                var dataarray = new Array();
-
-                console.log(data);
-
-
-                angular.forEach(data, function(series) {
-                    angular.forEach(series.values, function(value) {
-                        //     $scope.dayconsumption_total = $scope.dayconsumption_total + value.value;
-                        if (typeof dataarray[moment(value.time).format("YYYYMMDD")] === 'undefined') {
-                            dataarray[moment(value.time).format("YYYYMMDD")] = value.value;
-                            // var timezone = jstz.determine();
-                            console.log("if: " + moment(value.time).format("YYYYMMDD") + " value: " + value.value + " dataarray: " + dataarray[moment(value.time).format("YYYYMMDD")]);
-                        } else {
-                            dataarray[moment(value.time).format("YYYYMMDD")] = dataarray[moment(value.time).format("YYYYMMDD")] + value.value;
-                            console.log("else: " + moment(value.time).format("YYYYMMDD") + " value: " + value.value + " dataarray: " + dataarray[moment(value.time).format("YYYYMMDD")]);
-                        }
-                    });
-                });
-
-                console.log(dataarray);
-
-                var obj = [];
-                for (key in dataarray) {
-                    obj.push({
-                        label: key,
-                        value: dataarray[key]
-                    });
-                }
-
-                console.log(obj);
+                var result = prepareResult(data) ;
 
                 $scope.weekconsumptiondata = [{
                     key: "Week",
-                    values: obj
+                    values: result
+                }];
+
+            },
+            function(error) {});
+    }
+
+    function getProductionWeek() {
+
+
+        $GetDayData.query({
+                category: 'energy_neg',
+                phase: '123',
+                startdate: moment().subtract(28, 'days').startOf('day').format(),
+                enddate: moment().format()
+            },
+
+            function(data) {
+
+                var result = prepareResult(data) ;
+
+                $scope.weekproductiondata = [{
+                    key: "Week",
+                    values: result
                 }];
 
             },
@@ -258,6 +287,39 @@ smartpi.controller('MainCtrl', function($scope, $Momentary, $Linechart, $GetData
     $scope.weekconsumptionoptions = {
         chart: {
             type: 'discreteBarChart',
+            color:['red'],
+            height: 450,
+            margin: {
+                top: 20,
+                right: 20,
+                bottom: 50,
+                left: 65
+            },
+            x: function(d) {
+                return moment(d.label).format('DD-MM-YYYY');
+            },
+            y: function(d) {
+                return Math.round((d.value / 1000) * 100) / 100;
+            },
+            showValues: true,
+            valueFormat: function(d) {
+                return d3.format(',.2f')(d);
+            },
+            transitionDuration: 500,
+            xAxis: {
+                axisLabel: 'Date'
+            },
+            yAxis: {
+                axisLabel: 'Consumption (kWh)',
+                axisLabelDistance: 0
+            }
+        }
+    };
+
+    $scope.weekproductionoptions = {
+        chart: {
+            type: 'discreteBarChart',
+            color:['green'],
             height: 450,
             margin: {
                 top: 20,
