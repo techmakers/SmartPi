@@ -132,10 +132,11 @@
                                         <md-toolbar layout="row">
                                             <div class="md-toolbar-tools">
                                                 <h2>
-                                                    <span>Power</span>
+                                                    <span ng-show="momentary.isproduction">Power exported</span>
+                                                    <span ng-show="!momentary.isproduction">Power imported</span>
                                                 </h2>
                                                 <span flex></span>
-                                                <div class="huge">{{formatNumber(momentary.power_total)}} W</div>
+                                                <div class="huge" style="color:{{momentary.color}}">{{formatNumber(momentary.power_total)}} W</div>
                                             </div>
                                         </md-toolbar>
                                         <md-toolbar layout="row">
@@ -152,11 +153,11 @@
                                             </div>
                                         </md-toolbar>
                                         <div layout="row">
-                                            <div flex>
-                                                Consumption today: {{formatNumber(dayconsumption_total/1000)}} kWh
+                                            <div flex style="font-size:1.5em">
+                                                Imported today: <span style="color:red">{{formatNumber(dayconsumption_total/1000)}} kWh</span>
                                             </div>
-                                            <div flex>
-                                                Production today: {{formatNumber(dayproduction_total/1000)}} kWh
+                                            <div flex style="font-size:1.5em;">
+                                                Exported today: <span style="color:#2c752c">{{formatNumber(dayproduction_total/1000)}} kWh</span>
                                             </div>
                                         </div>
                                 </div>
@@ -225,7 +226,7 @@
                                         <md-toolbar layout="row">
                                             <div class="md-toolbar-tools">
                                                 <h2>
-                                                    <span>Consumption</span>
+                                                    <span>Imported</span>
                                                 </h2>
                                                 <span flex></span>
                                                 <div class="huge">Week</div>
@@ -242,7 +243,7 @@
                                         <md-toolbar layout="row">
                                             <div class="md-toolbar-tools">
                                                 <h2>
-                                                    <span>Production</span>
+                                                    <span>Exported</span>
                                                 </h2>
                                                 <span flex></span>
                                                 <div class="huge">Week</div>

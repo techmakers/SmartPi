@@ -73,6 +73,7 @@ smartpi.controller('MainCtrl', function($scope, $Momentary, $Linechart, $GetData
         $Momentary.get({},
             function(data) {
 
+                $scope.momentary.isproduction = false ;
                 $scope.momentary.power_total = 0;
                 $scope.momentary.power = [];
                 $scope.momentary.current_total = 0;
@@ -106,6 +107,13 @@ smartpi.controller('MainCtrl', function($scope, $Momentary, $Linechart, $GetData
                     })
 
                 })
+
+                if ($scope.momentary.power_total < 0){
+                    $scope.momentary.isproduction = true ;
+                    $scope.momentary.power_total = $scope.momentary.power_total * -1 ;
+                } 
+
+                $scope.momentary.color = $scope.momentary.isproduction ? "#5cff5c" : "red" ;
 
             },
             function(error) {
@@ -154,7 +162,7 @@ smartpi.controller('MainCtrl', function($scope, $Momentary, $Linechart, $GetData
             function(error) {});
     }
 
-    function prepareResult(data){
+    function prepareResult(data,dateformat){
         var dateString;
         var dataarray = new Array();
 
@@ -164,13 +172,13 @@ smartpi.controller('MainCtrl', function($scope, $Momentary, $Linechart, $GetData
         angular.forEach(data, function(series) {
             angular.forEach(series.values, function(value) {
                 //     $scope.dayconsumption_total = $scope.dayconsumption_total + value.value;
-                if (typeof dataarray[moment(value.time).format("YYYYMMDD")] === 'undefined') {
-                    dataarray[moment(value.time).format("YYYYMMDD")] = value.value;
+                if (typeof dataarray[moment(value.time).format(dateformat)] === 'undefined') {
+                    dataarray[moment(value.time).format(dateformat)] = value.value;
                     // var timezone = jstz.determine();
-                    console.log("if: " + moment(value.time).format("YYYYMMDD") + " value: " + value.value + " dataarray: " + dataarray[moment(value.time).format("YYYYMMDD")]);
+                    console.log("if: " + moment(value.time).format(dateformat) + " value: " + value.value + " dataarray: " + dataarray[moment(value.time).format(dateformat)]);
                 } else {
-                    dataarray[moment(value.time).format("YYYYMMDD")] = dataarray[moment(value.time).format("YYYYMMDD")] + value.value;
-                    console.log("else: " + moment(value.time).format("YYYYMMDD") + " value: " + value.value + " dataarray: " + dataarray[moment(value.time).format("YYYYMMDD")]);
+                    dataarray[moment(value.time).format(dateformat)] = dataarray[moment(value.time).format(dateformat)] + value.value;
+                    console.log("else: " + moment(value.time).format(dateformat) + " value: " + value.value + " dataarray: " + dataarray[moment(value.time).format(dateformat)]);
                 }
             });
         });
@@ -195,13 +203,13 @@ smartpi.controller('MainCtrl', function($scope, $Momentary, $Linechart, $GetData
         $GetDayData.query({
                 category: 'energy_pos',
                 phase: '123',
-                startdate: moment().subtract(28, 'days').startOf('day').format(),
+                startdate: moment().subtract(7, 'days').startOf('day').format(),
                 enddate: moment().format()
             },
 
             function(data) {
 
-                var result = prepareResult(data) ;
+                var result = prepareResult(data,"YYYYMMDD") ;
 
                 $scope.weekconsumptiondata = [{
                     key: "Week",
@@ -218,13 +226,13 @@ smartpi.controller('MainCtrl', function($scope, $Momentary, $Linechart, $GetData
         $GetDayData.query({
                 category: 'energy_neg',
                 phase: '123',
-                startdate: moment().subtract(28, 'days').startOf('day').format(),
+                startdate: moment().subtract(7, 'days').startOf('day').format(),
                 enddate: moment().format()
             },
 
             function(data) {
 
-                var result = prepareResult(data) ;
+                var result = prepareResult(data,"YYYYMMDD") ;
 
                 $scope.weekproductiondata = [{
                     key: "Week",
@@ -319,7 +327,7 @@ smartpi.controller('MainCtrl', function($scope, $Momentary, $Linechart, $GetData
     $scope.weekproductionoptions = {
         chart: {
             type: 'discreteBarChart',
-            color:['green'],
+            color:['#2c752c'],
             height: 450,
             margin: {
                 top: 20,
