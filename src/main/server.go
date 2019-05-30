@@ -156,10 +156,10 @@ func getSoftwareInformations(w http.ResponseWriter, r *http.Request) {
 }
 
 func getInfos(w http.ResponseWriter, r *http.Request) {
-	data := smartpi.ReadConfig()
+	config := smartpi.NewConfig()
 	ret := Infos{
-		Name: data.Name,
-		Serial: data.Serial,
+		Name: config.Name,
+		Serial: config.Serial,
 	}
 	// JSON output of request
 	if err := json.NewEncoder(w).Encode(ret); err != nil {
