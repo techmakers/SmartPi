@@ -172,6 +172,7 @@ func loggingMiddleware(next http.Handler) http.Handler {
         // Do stuff here
         log.Println(r.RequestURI)
         // Call the next handler, which can be another middleware in the chain, or the final handler.
+/*
         u := smartpi.NewUser()
 		user, pass, ok := r.BasicAuth()
 
@@ -188,7 +189,7 @@ func loggingMiddleware(next http.Handler) http.Handler {
 			}
 			return
 		}
-
+*/
         next.ServeHTTP(w, r)
     })
 }
