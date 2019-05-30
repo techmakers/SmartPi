@@ -33,6 +33,12 @@ angular.module('smartpi.services', ['ngResource', 'base64'])
     return $resource(full + '/api/version');
 })
 
+.factory('$GetInfos', function($resource) {
+    var factory = {}
+    var full = location.protocol + '//' + location.hostname + (location.port ? ':' + location.port : '');
+    return $resource(full + '/api/name');
+})
+
 .factory('$GetConfigData', function($resource, $base64) {
     var factory = {}
     var full = location.protocol + '//' + location.hostname + (location.port ? ':' + location.port : '');

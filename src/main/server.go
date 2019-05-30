@@ -141,11 +141,28 @@ type Softwareinformations struct {
 	Softwareversion string
 }
 
+type Infos struct {
+	Name string
+	Serial string
+}
+
 func getSoftwareInformations(w http.ResponseWriter, r *http.Request) {
 	data := Softwareinformations{Softwareversion: appVersion}
 
 	// JSON output of request
 	if err := json.NewEncoder(w).Encode(data); err != nil {
+		panic(err)
+	}
+}
+
+func getInfos(w http.ResponseWriter, r *http.Request) {
+	data := smartpi.ReadConfig()
+	ret := Infos{
+		Name: data.Name
+		Serial: data.Serial
+	}
+	// JSON output of request
+	if err := json.NewEncoder(w).Encode(ret); err != nil {
 		panic(err)
 	}
 }
@@ -175,6 +192,7 @@ func main() {
 	r.HandleFunc("/api/dayvalues/{phaseId}/{valueId}/from/{fromDate}/to/{toDate}/{format}", smartpi.ServeDayValues)
 	r.HandleFunc("/api/csv/from/{fromDate}/to/{toDate}", smartpi.ServeCSVValues)
 	r.HandleFunc("/api/version", getSoftwareInformations)
+	r.HandleFunc("/api/name", getInfos)
 	r.HandleFunc("/api/config/read", BasicAuth("Please enter your username and password for this site", smartpi.ReadConfig, config, user, "smartpiadmin")).Methods("GET")
 	r.HandleFunc("/api/config/write", BasicAuth("Please enter your username and password for this site", smartpi.WriteConfig, config, user, "smartpiadmin")).Methods("POST")
 	r.HandleFunc("/api/config/user/read", BasicAuth("Please enter your username and password for this site", smartpi.ReadUserData, config, user, "smartpiadmin")).Methods("GET")

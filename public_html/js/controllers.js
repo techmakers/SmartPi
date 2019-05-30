@@ -4,6 +4,8 @@ smartpi.controller('MainCtrl', function($scope, $Momentary, $Linechart, $GetData
 
     $scope.toShow = "dashboard";
 
+    $scope.infos = {} ;
+
 
     $scope.data = [];
     $scope.daydata = [];
@@ -36,7 +38,15 @@ smartpi.controller('MainCtrl', function($scope, $Momentary, $Linechart, $GetData
     $GetSoftwareInformations.get({},
         function(softwareinformations) {
             $scope.softwareversion = softwareinformations.Softwareversion;
-        });
+        }
+    );
+
+    $GetInfos.get({},
+        function(infos) {
+            $scope.infos = infos;
+        }
+    );
+
 
     getActualValues();
     getConsumptionToday();
