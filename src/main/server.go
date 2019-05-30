@@ -158,7 +158,7 @@ func getSoftwareInformations(w http.ResponseWriter, r *http.Request) {
 func getInfos(w http.ResponseWriter, r *http.Request) {
 	data := smartpi.ReadConfig()
 	ret := Infos{
-		Name: data.Name
+		Name: data.Name,
 		Serial: data.Serial
 	}
 	// JSON output of request
