@@ -1,6 +1,14 @@
-smartpi.controller('MainCtrl', function($scope, $Momentary, $Linechart, $GetDatabaseData, $GetDayData, $interval, $GetSoftwareInformations, $mdSidenav) {
+smartpi.controller('MainCtrl', function($scope, $Momentary, $Linechart, $GetDatabaseData, $GetDayData, $interval, $GetSoftwareInformations, $GetInfos, $mdSidenav) {
 
-    $scope.nodelocation = window.location.protocol + '//' + window.location.hostname + ':1880';
+
+    var hostNameComponents = window.location.hostname.split(".") ;
+    if (hostNameComponents.indexOf("local") == -1){
+        var noderedSubDomain = hostNameComponents[0]+"-dashboard" ;
+        hostNameComponents[0] = noderedSubDomain ;
+        $scope.nodelocation = window.location.protocol + '//' + hostNameComponents.join(".") + '/ui' ;
+    } else {
+        $scope.nodelocation = window.location.protocol + '//' + window.location.hostname + ':1880/ui';
+    }
 
     $scope.toShow = "dashboard";
 

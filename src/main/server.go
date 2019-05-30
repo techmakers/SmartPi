@@ -167,6 +167,15 @@ func getInfos(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func loggingMiddleware(next http.Handler) http.Handler {
+    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        // Do stuff here
+        log.Println(r.RequestURI)
+        // Call the next handler, which can be another middleware in the chain, or the final handler.
+        next.ServeHTTP(w, r)
+    })
+}
+
 func main() {
 
 	config := smartpi.NewConfig()
@@ -182,6 +191,7 @@ func main() {
 	fmt.Println("SmartPi server started")
 
 	r := mux.NewRouter()
+	r.Use(loggingMiddleware) ;
 	r.HandleFunc("/api/{phaseId}/{valueId}/now", smartpi.ServeMomentaryValues)
 	r.HandleFunc("/api/{phaseId}/{valueId}/now/{format}", smartpi.ServeMomentaryValues)
 	r.HandleFunc("/api/chart/{phaseId}/{valueId}/from/{fromDate}/to/{toDate}", smartpi.ServeChartValues)
