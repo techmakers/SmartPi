@@ -159,7 +159,7 @@ func getInfos(w http.ResponseWriter, r *http.Request) {
 	data := smartpi.ReadConfig()
 	ret := Infos{
 		Name: data.Name,
-		Serial: data.Serial
+		Serial: data.Serial,
 	}
 	// JSON output of request
 	if err := json.NewEncoder(w).Encode(ret); err != nil {
