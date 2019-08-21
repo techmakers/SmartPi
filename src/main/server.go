@@ -142,7 +142,7 @@ type Softwareinformations struct {
 }
 
 type Infos struct {
-	Name string
+	Name   string
 	Serial string
 }
 
@@ -158,7 +158,7 @@ func getSoftwareInformations(w http.ResponseWriter, r *http.Request) {
 func getInfos(w http.ResponseWriter, r *http.Request) {
 	config := smartpi.NewConfig()
 	ret := Infos{
-		Name: config.Name,
+		Name:   config.Name,
 		Serial: config.Serial,
 	}
 	// JSON output of request
@@ -168,30 +168,30 @@ func getInfos(w http.ResponseWriter, r *http.Request) {
 }
 
 func loggingMiddleware(next http.Handler) http.Handler {
-    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-        // Do stuff here
-        // log.Println(r.RequestURI)
-        // Call the next handler, which can be another middleware in the chain, or the final handler.
-/*
-        u := smartpi.NewUser()
-		user, pass, ok := r.BasicAuth()
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Do stuff here
+		// log.Println(r.RequestURI)
+		// Call the next handler, which can be another middleware in the chain, or the final handler.
+		/*
+		           u := smartpi.NewUser()
+		   		user, pass, ok := r.BasicAuth()
 
-		u.ReadUser(user, pass)
+		   		u.ReadUser(user, pass)
 
-		if !ok || !u.Exist || subtle.ConstantTimeCompare([]byte(user), []byte(u.Name)) != 1 || subtle.ConstantTimeCompare([]byte(pass), []byte(u.Password)) != 1 {
+		   		if !ok || !u.Exist || subtle.ConstantTimeCompare([]byte(user), []byte(u.Name)) != 1 || subtle.ConstantTimeCompare([]byte(pass), []byte(u.Password)) != 1 {
 
-			realm := "Please enter your username and password for this site"
-			w.Header().Set("WWW-Authenticate", `Basic realm="`+realm+`"`)
-			w.WriteHeader(400)
-			// w.Write([]byte("Unauthorised.\n"))
-			if err := json.NewEncoder(w).Encode(JSONMessage{Code: 401, Message: "Unauthorized"}); err != nil {
-				panic(err)
-			}
-			return
-		}
-*/
-        next.ServeHTTP(w, r)
-    })
+		   			realm := "Please enter your username and password for this site"
+		   			w.Header().Set("WWW-Authenticate", `Basic realm="`+realm+`"`)
+		   			w.WriteHeader(400)
+		   			// w.Write([]byte("Unauthorised.\n"))
+		   			if err := json.NewEncoder(w).Encode(JSONMessage{Code: 401, Message: "Unauthorized"}); err != nil {
+		   				panic(err)
+		   			}
+		   			return
+		   		}
+		*/
+		next.ServeHTTP(w, r)
+	})
 }
 
 func main() {
@@ -209,7 +209,7 @@ func main() {
 	fmt.Println("SmartPi server started")
 
 	r := mux.NewRouter()
-	r.Use(loggingMiddleware) ;
+	r.Use(loggingMiddleware)
 	r.HandleFunc("/api/{phaseId}/{valueId}/now", smartpi.ServeMomentaryValues)
 	r.HandleFunc("/api/{phaseId}/{valueId}/now/{format}", smartpi.ServeMomentaryValues)
 	r.HandleFunc("/api/chart/{phaseId}/{valueId}/from/{fromDate}/to/{toDate}", smartpi.ServeChartValues)

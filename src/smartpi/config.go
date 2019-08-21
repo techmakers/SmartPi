@@ -62,7 +62,7 @@ type Config struct {
 	MeasureCurrent       map[Phase]bool
 	MeasureVoltage       map[Phase]bool
 	Voltage              map[Phase]float64
-	ReadingsPerSecond	 float64
+	ReadingsPerSecond    float64
 
 	// [ftp]
 	FTPupload bool
